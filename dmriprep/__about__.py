@@ -21,10 +21,10 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Base module variables."""
-from ._version import get_versions
+# from ._version import get_versions
 
-__version__ = get_versions()["version"]
-del get_versions
+__version__ = "0.0.0"
+# del get_versions
 
 __packagename__ = "dmriprep"
 __copyright__ = "Copyright 2019, The dMRIPrep developers"

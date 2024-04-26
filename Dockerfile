@@ -126,9 +126,9 @@ WORKDIR /home/dmriprep
 ENV HOME="/home/dmriprep"
 
 # Installing and setting up miniconda
-RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh && \
-    bash Miniconda3-4.5.11-Linux-x86_64.sh -b -p /usr/local/miniconda && \
-    rm Miniconda3-4.5.11-Linux-x86_64.sh
+RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    bash Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/miniconda && \
+    rm Miniconda3-latest-Linux-x86_64.sh
 
 # Set CPATH for packages relying on compiled libs (e.g. indexed_gzip)
 ENV PATH="/usr/local/miniconda/bin:$PATH" \
@@ -138,28 +138,54 @@ ENV PATH="/usr/local/miniconda/bin:$PATH" \
     PYTHONNOUSERSITE=1
 
 # Installing precomputed python packages
-RUN conda install -y -c anaconda -c conda-forge \
-                     python=3.7.1 \
-                     graphviz=2.40 \
-                     git-annex \
-                     libxml2=2.9.8 \
-                     libxslt=1.1.32 \
-                     matplotlib=2.2 \
-                     mkl \
-                     mkl-service \
-                     nodejs \
-                     numpy=1.20 \
-                     pandoc=2.11 \
-                     pip=20.3 \
-                     scikit-learn=0.19 \
-                     scipy=1.5 \
-                     setuptools=51.1 \
-                     traits=4.6.0 \
-                     zlib; sync && \
+RUN conda install -y conda-libmamba-solver && \
+    conda config --set solver libmamba
+# RUN conda install -y \
+#                      python=3.7.1 \
+#                      graphviz=2.40 \
+#                      git-annex \
+#                      libxml2=2.9.8 \
+#                      libxslt=1.1.32 \
+#                      matplotlib=2.2 \
+#                      mkl \
+#                      mkl-service \
+#                      nodejs \
+#                      numpy=1.20 \
+#                      pandoc=2.11 \
+#                      pip=20.3 \
+#                      scikit-learn=0.19 \
+#                      scipy=1.5 \
+#                      setuptools=51.1 \
+#                      traits=4.6.0 \
+#                      zlib; sync && \
+#     chmod -R a+rX /usr/local/miniconda; sync && \
+#     chmod +x /usr/local/miniconda/bin/*; sync && \
+#     conda build purge-all; sync && \
+#     conda clean -tipsy && sync
+
+RUN conda install -y \
+                    # python=3.7.1 \
+                    graphviz \
+                    # git-annex \
+                    libxml2 \
+                    libxslt \
+                    matplotlib \
+                    mkl \
+                    mkl-service \
+                    nodejs \
+                    numpy \
+                    pandoc \
+                    pip \
+                    scikit-learn \
+                    scipy \
+                    setuptools \
+                    traits \
+                    zlib; sync && \
     chmod -R a+rX /usr/local/miniconda; sync && \
     chmod +x /usr/local/miniconda/bin/*; sync && \
-    conda build purge-all; sync && \
-    conda clean -tipsy && sync
+    # conda build purge-all; sync && \
+    conda clean -a && sync
+
 
 # Unless otherwise specified each process should only use one thread - nipype
 # will handle parallelization
@@ -185,7 +211,8 @@ WORKDIR /src
 COPY . /src/dmriprep
 ARG VERSION
 # Force static versioning within container
-RUN echo "${VERSION}" > /src/dmriprep/dmriprep/VERSION && \
+RUN export SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True && \
+    echo "${VERSION}" > /src/dmriprep/dmriprep/VERSION && \
     echo "include dmriprep/VERSION" >> /src/dmriprep/MANIFEST.in && \
     cd /src/dmriprep && \
     pip install --no-cache-dir .[all]

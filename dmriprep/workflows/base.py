@@ -24,6 +24,7 @@
 from .. import config
 import sys
 import os
+from pathlib import Path
 from copy import deepcopy
 
 from nipype.pipeline import engine as pe
@@ -67,14 +68,16 @@ def init_dmriprep_wf():
         fsdir = pe.Node(
             BIDSFreeSurferDir(
                 derivatives=config.execution.output_dir,
-                freesurfer_home=os.getenv("FREESURFER_HOME"),
+                freesurfer_home=Path(os.getenv("FREESURFER_HOME")),
                 spaces=config.workflow.spaces.get_fs_spaces(),
             ),
             name=f"fsdir_run_{config.execution.run_uuid.replace('-', '_')}",
             run_without_submitting=True,
         )
         if config.execution.fs_subjects_dir is not None:
-            fsdir.inputs.subjects_dir = str(config.execution.fs_subjects_dir.absolute())
+            fsdir.inputs.subjects_dir = str(
+                config.execution.fs_subjects_dir.absolute()
+            )
 
     for subject_id in config.execution.participant_label:
         single_subject_wf = init_single_subject_wf(subject_id)
@@ -91,7 +94,10 @@ def init_dmriprep_wf():
             node.config = deepcopy(single_subject_wf.config)
         if freesurfer:
             dmriprep_wf.connect(
-                fsdir, "subjects_dir", single_subject_wf, "fsinputnode.subjects_dir"
+                fsdir,
+                "subjects_dir",
+                single_subject_wf,
+                "fsinputnode.subjects_dir",
             )
         else:
             dmriprep_wf.add_nodes([single_subject_wf])
@@ -206,7 +212,8 @@ It is released under the [CC0]\
     )
 
     bidssrc = pe.Node(
-        BIDSDataGrabber(subject_data=subject_data, anat_only=anat_only), name="bidssrc"
+        BIDSDataGrabber(subject_data=subject_data, anat_only=anat_only),
+        name="bidssrc",
     )
 
     bids_info = pe.Node(
@@ -224,7 +231,9 @@ It is released under the [CC0]\
     )
 
     about = pe.Node(
-        AboutSummary(version=config.environment.version, command=" ".join(sys.argv)),
+        AboutSummary(
+            version=config.environment.version, command=" ".join(sys.argv)
+        ),
         name="about",
         run_without_submitting=True,
     )
@@ -261,7 +270,7 @@ It is released under the [CC0]\
     anat_preproc_wf = init_anat_preproc_wf(
         bids_root=str(config.execution.bids_dir),
         debug=config.execution.debug is True,
-        existing_derivatives=anat_derivatives,
+        # existing_derivatives=anat_derivatives,
         freesurfer=config.workflow.run_reconall,
         hires=config.workflow.hires,
         longitudinal=config.workflow.longitudinal,
@@ -274,6 +283,9 @@ It is released under the [CC0]\
         )[0],
         spaces=spaces,
         t1w=subject_data["t1w"],
+        msm_sulc=config.workflow.msm_sulc,
+        t2w=subject_data["t2w"],
+        precomputed=config.execution.precomputed,
     )
     anat_preproc_wf.__desc__ = f"\n\n{anat_preproc_wf.__desc__}"
 
@@ -371,7 +383,7 @@ Please add the 'MNI152NLin2009cAsym' keyword to the '--output-spaces' argument""
                 ("outputnode.std2anat_xfm", "inputnode.std2anat_xfm"),
                 # Undefined if --fs-no-reconall, but this is safe
                 ("outputnode.subjects_dir", "inputnode.subjects_dir"),
-                ("outputnode.t1w2fsnative_xfm", "inputnode.t1w2fsnative_xfm"),
+                # ("outputnode.t1w2fsnative_xfm", "inputnode.t1w2fsnative_xfm"),
                 ("outputnode.fsnative2t1w_xfm", "inputnode.fsnative2t1w_xfm"),
             ]),
             (bids_info, dwi_preproc_wf, [("subject", "inputnode.subject_id")]),
