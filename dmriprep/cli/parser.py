@@ -52,7 +52,7 @@ def _build_parser():
         return value
 
     def _to_gb(value):
-        scale = {"G": 1, "T": 10 ** 3, "M": 1e-3, "K": 1e-6, "B": 1e-9}
+        scale = {"G": 1, "T": 10**3, "M": 1e-3, "K": 1e-6, "B": 1e-9}
         digits = "".join([c for c in value if c.isdigit()])
         units = value[len(digits) :] or "M"
         return int(digits) * scale[units[0]]
@@ -70,7 +70,11 @@ def _build_parser():
     verstr = f"dMRIPrep v{config.environment.version}"
     currentv = Version(config.environment.version)
     is_release = not any(
-        (currentv.is_devrelease, currentv.is_prerelease, currentv.is_postrelease)
+        (
+            currentv.is_devrelease,
+            currentv.is_prerelease,
+            currentv.is_postrelease,
+        )
     )
 
     parser = ArgumentParser(
@@ -96,7 +100,8 @@ def _build_parser():
         "output_dir",
         action="store",
         type=Path,
-        help="the output path for the outcomes of preprocessing and visual " "reports",
+        help="the output path for the outcomes of preprocessing and visual "
+        "reports",
     )
     parser.add_argument(
         "analysis_level",
@@ -181,7 +186,9 @@ def _build_parser():
         help="nipype plugin configuration file",
     )
     g_perfm.add_argument(
-        "--anat-only", action="store_true", help="run anatomical workflows only"
+        "--anat-only",
+        action="store_true",
+        help="run anatomical workflows only",
     )
     g_perfm.add_argument(
         "--boilerplate_only",
@@ -249,7 +256,9 @@ https://www.nipreps.org/dmriprep/en/%s/spaces.html"""
     )
 
     #  ANTs options
-    g_ants = parser.add_argument_group("Specific options for ANTs registrations")
+    g_ants = parser.add_argument_group(
+        "Specific options for ANTs registrations"
+    )
     g_ants.add_argument(
         "--skull-strip-template",
         default="OASIS30ANTs",
@@ -264,7 +273,9 @@ https://www.nipreps.org/dmriprep/en/%s/spaces.html"""
     )
 
     # SyN-unwarp options
-    g_syn = parser.add_argument_group("Specific options for SyN distortion correction")
+    g_syn = parser.add_argument_group(
+        "Specific options for SyN distortion correction"
+    )
     g_syn.add_argument(
         "--use-syn-sdc",
         action="store_true",
@@ -287,11 +298,14 @@ is discouraged.""",
     )
 
     # FreeSurfer options
-    g_fs = parser.add_argument_group("Specific options for FreeSurfer preprocessing")
+    g_fs = parser.add_argument_group(
+        "Specific options for FreeSurfer preprocessing"
+    )
     g_fs.add_argument(
         "--fs-license-file",
         metavar="PATH",
         type=PathExists,
+        default=None,
         help="Path to FreeSurfer license key file. Get it (for free) by registering"
         " at https://surfer.nmr.mgh.harvard.edu/registration.html",
     )
@@ -299,6 +313,7 @@ is discouraged.""",
         "--fs-subjects-dir",
         metavar="PATH",
         type=Path,
+        default=None,
         help="Path to existing FreeSurfer subjects directory to reuse. "
         "(default: OUTPUT_DIR/freesurfer)",
     )
@@ -419,7 +434,9 @@ def parse_args(args=None, namespace=None):
 
     parser = _build_parser()
     opts = parser.parse_args(args, namespace)
-    config.execution.log_level = int(max(25 - 5 * opts.verbose_count, logging.DEBUG))
+    config.execution.log_level = int(
+        max(25 - 5 * opts.verbose_count, logging.DEBUG)
+    )
     config.from_dict(vars(opts))
     config.loggers.init()
 
@@ -430,15 +447,15 @@ def parse_args(args=None, namespace=None):
     # Retrieve logging level
     build_log = config.loggers.cli
 
-    if config.execution.fs_license_file is None:
-        raise RuntimeError(
-            """\
-ERROR: a valid license file is required for FreeSurfer to run. dMRIPrep looked for an existing \
-license file at several paths, in this order: 1) command line argument ``--fs-license-file``; \
-2) ``$FS_LICENSE`` environment variable; and 3) the ``$FREESURFER_HOME/license.txt`` path. Get it \
-(for free) by registering at https://surfer.nmr.mgh.harvard.edu/registration.html"""
-        )
-    os.environ["FS_LICENSE"] = str(config.execution.fs_license_file)
+    #     if config.execution.fs_license_file is None:
+    #         raise RuntimeError(
+    #             """\
+    # ERROR: a valid license file is required for FreeSurfer to run. dMRIPrep looked for an existing \
+    # license file at several paths, in this order: 1) command line argument ``--fs-license-file``; \
+    # 2) ``$FS_LICENSE`` environment variable; and 3) the ``$FREESURFER_HOME/license.txt`` path. Get it \
+    # (for free) by registering at https://surfer.nmr.mgh.harvard.edu/registration.html"""
+    #         )
+    #     os.environ["FS_LICENSE"] = str(config.execution.fs_license_file)
 
     # Load base plugin_settings from file if --use-plugin
     if opts.use_plugin is not None:
@@ -477,10 +494,13 @@ license file at several paths, in this order: 1) command line argument ``--fs-li
     if opts.clean_workdir and work_dir.exists():
         from niworkflows.utils.misc import clean_directory
 
-        build_log.log("Clearing previous dMRIPrep working directory: %s", work_dir)
+        build_log.log(
+            "Clearing previous dMRIPrep working directory: %s", work_dir
+        )
         if not clean_directory(work_dir):
             build_log.warning(
-                "Could not clear all contents of working directory: %s", work_dir
+                "Could not clear all contents of working directory: %s",
+                work_dir,
             )
 
     # Ensure input and output folders are not the same
@@ -533,4 +553,6 @@ license file at several paths, in this order: 1) command line argument ``--fs-li
         )
 
     config.execution.participant_label = sorted(participant_label)
-    config.workflow.skull_strip_template = config.workflow.skull_strip_template[0]
+    config.workflow.skull_strip_template = (
+        config.workflow.skull_strip_template[0]
+    )
