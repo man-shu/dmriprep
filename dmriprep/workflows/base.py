@@ -70,6 +70,7 @@ def init_dmriprep_wf():
                 derivatives=config.execution.output_dir,
                 freesurfer_home=Path(os.getenv("FREESURFER_HOME")),
                 spaces=config.workflow.spaces.get_fs_spaces(),
+                minimum_fs_version='7.0.0',
             ),
             name=f"fsdir_run_{config.execution.run_uuid.replace('-', '_')}",
             run_without_submitting=True,
@@ -214,6 +215,7 @@ It is released under the [CC0]\
     bidssrc = pe.Node(
         BIDSDataGrabber(subject_data=subject_data, anat_only=anat_only),
         name="bidssrc",
+        subject_id=subject_id,
     )
 
     bids_info = pe.Node(
@@ -291,25 +293,25 @@ It is released under the [CC0]\
 
     # fmt:off
     workflow.connect([
-        (fsinputnode, anat_preproc_wf, [("subjects_dir", "inputnode.subjects_dir")]),
         (bidssrc, bids_info, [(("t1w", fix_multi_T1w_source_name), "in_file")]),
-        (fsinputnode, summary, [("subjects_dir", "subjects_dir")]),
         (bidssrc, summary, [("t1w", "t1w"), ("t2w", "t2w"), ("dwi", "dwi")]),
-        (bids_info, summary, [("subject", "subject_id")]),
-        (bids_info, anat_preproc_wf, [(("subject", _prefix), "inputnode.subject_id")]),
+        (bidssrc, ds_report_summary, [
+            (("t1w", fix_multi_T1w_source_name), "source_file"),
+        ]),
+        (bidssrc, ds_report_about, [
+            (("t1w", fix_multi_T1w_source_name), "source_file")
+        ]),
+        (fsinputnode, anat_preproc_wf, [("subjects_dir", "inputnode.subjects_dir")]),
         (bidssrc, anat_preproc_wf, [
             ("t1w", "inputnode.t1w"),
             ("t2w", "inputnode.t2w"),
             ("roi", "inputnode.roi"),
             ("flair", "inputnode.flair"),
         ]),
-        (bidssrc, ds_report_summary, [
-            (("t1w", fix_multi_T1w_source_name), "source_file"),
-        ]),
+        (bids_info, anat_preproc_wf, [(("subject", _prefix), "inputnode.subject_id")]),
+        (fsinputnode, summary, [("subjects_dir", "subjects_dir")]),
+        (bids_info, summary, [("subject", "subject_id")]),
         (summary, ds_report_summary, [("out_report", "in_file")]),
-        (bidssrc, ds_report_about, [
-            (("t1w", fix_multi_T1w_source_name), "source_file")
-        ]),
         (about, ds_report_about, [("out_report", "in_file")]),
     ])
     # fmt:off

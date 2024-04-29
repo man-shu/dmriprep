@@ -130,8 +130,12 @@ Geometrical distortions derived from the so-called Eddy-currents, and head-motio
 realignment parameters were estimated with the joint modeling of ``eddy_openmp``,
 included in FSL {Eddy().version} [@eddy].
 """
+    # eddy_openmp not working, create new Eddy node with eddy_cpu
+    Eddy_fix = Eddy()
+    Eddy_fix._cmd = "eddy_cpu"
+
     eddy = pe.Node(
-        Eddy(),
+        Eddy_fix,
         name="eddy",
     )
 
